@@ -181,6 +181,7 @@ int main(int argc, char *argv[])
         if (fp != NULL)
         {
             fprintf(fp, "%s", tlog_str.c_str());
+            fflush(fp);
         }
         usleep(1000000); // every second
     }
