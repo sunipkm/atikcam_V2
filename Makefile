@@ -53,9 +53,12 @@ $(CLKGENTARGET):
 %.o: %.c
 	$(CC) $(EDCFLAGS) -o $@ -c $<
 
-.PHONY: clean
+.PHONY: clean cleandata
 
 clean:
 	rm -vf $(CPPOBJS)
 	rm -vf *.out
 	rm -vf *.jpg
+
+cleandata:
+    rm -rvf bootcount.dat data
