@@ -42,9 +42,11 @@ void sighandler(int sig)
 }
 
 static int bootCount = 0;
-static char dirname[256] = {0, };
+static char dirname[256] = {
+    0,
+};
 
-void frame_grabber(clkgen_t timer_id, void *user_data)
+void frame_grabber(CCameraUnit *cam, int cadence = 10) // cadence in seconds
 {
     static float maxExposure = 120;
     static float pixelPercentile = 90;
@@ -53,14 +55,10 @@ void frame_grabber(clkgen_t timer_id, void *user_data)
     static int maxBin = 4;
     static int imgXMin = 100, imgYMin = 335, imgXMax = -1, imgYMax = -1;
 
-    static bool firstrun = true;
-
     static float exposure = 0.2; // 200 ms
-    static int bin = 1; // start with bin 1
+    static int bin = 1;          // start with bin 1
 
     long retrycount = 10;
-
-    CCameraUnit *cam = (CCameraUnit *) user_data;
 
     if (cam == nullptr)
     {
@@ -68,27 +66,32 @@ void frame_grabber(clkgen_t timer_id, void *user_data)
         return;
     }
 
-    if (firstrun)
-    {
-        cam->SetBinningAndROI(bin, bin, imgXMin, imgXMax, imgYMin, imgYMax); // set binning and ROI
-        cam->SetExposure(exposure); // set exposure
-        firstrun = false;
-    }
-
-    CImageData img = cam->CaptureImage(retrycount); // capture frame
-    if (!img.SaveFits(NULL, dirname)) // save frame
-    {
-        dbprintlf(FATAL "Could not save FITS");
-    }
-    else
-    {
-        dbprintlf(GREEN_FG "Saved: Exposure %.3f s, Bin %d", exposure, bin);
-    }
-    sync();
-    // run auto exposure
-    img.FindOptimumExposure(exposure, bin, pixelPercentile, pixelTarget, maxExposure, maxBin, 100, pixelUncertainty);
     cam->SetBinningAndROI(bin, bin, imgXMin, imgXMax, imgYMin, imgYMax); // set binning and ROI
-    cam->SetExposure(exposure);
+    cam->SetExposure(exposure);                                          // set exposure
+
+    while (!done)
+    {
+        uint64_t start = get_msec();
+        CImageData img = cam->CaptureImage(retrycount); // capture frame
+        if (!img.SaveFits(NULL, dirname))               // save frame
+        {
+            dbprintlf(FATAL "Could not save FITS");
+        }
+        else
+        {
+            dbprintlf(GREEN_FG "Saved: Exposure %.3f s, Bin %d", exposure, bin);
+        }
+        sync();
+        // run auto exposure
+        img.FindOptimumExposure(exposure, bin, pixelPercentile, pixelTarget, maxExposure, maxBin, 100, pixelUncertainty);
+        cam->SetBinningAndROI(bin, bin, imgXMin, imgXMax, imgYMin, imgYMax); // set binning and ROI
+        cam->SetExposure(exposure);
+        start -= get_msec();
+        if (start < cadence * 1000)
+        {
+            usleep((cadence * 1000 - start) * 1000);
+        }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -117,7 +120,7 @@ int main(int argc, char *argv[])
             cam = nullptr;
         }
     } while (retryCount--);
-    
+
     if (cam == nullptr)
     {
         bprintlf(RED_FG "Error opening camera");
@@ -127,12 +130,12 @@ int main(int argc, char *argv[])
     bootCount = GetBootCount();
 
     snprintf(dirname, sizeof(dirname), "data/%d", bootCount);
-    
+
     try
     {
         checknmakedir(dirname);
     }
-    catch(const std::exception& e)
+    catch (const std::exception &e)
     {
         dbprintlf(FATAL "Error creating directory: %s", e.what());
         delete cam;
@@ -140,7 +143,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    clkgen_t camera_clk = create_clk(cadence * 1000000000LLU, frame_grabber, (void *) cam);
+    std::thread camera_thread(frame_grabber, cam, cadence);
 
     mcp9808 board_tsensor;
     bool board_ts_active = board_tsensor.begin(0x18);
@@ -159,7 +162,7 @@ int main(int argc, char *argv[])
     {
         uint64_t tnow = get_msec();
         short board_temp = -9999;
-        if (board_ts_active) 
+        if (board_ts_active)
             board_temp = board_tsensor.readTemp();
         short ccd_temp = cam->GetTemperature() * 100;
         std::string tlog_str = std::to_string(tnow) + "," + std::to_string(ccd_temp) + "," + std::to_string(board_temp) + "\n";
@@ -174,7 +177,7 @@ int main(int argc, char *argv[])
     {
         fclose(fp);
     }
-    destroy_clk(camera_clk);
+    camera_thread.join();
     if (board_ts_active)
         board_tsensor.shutdown();
     sync();
