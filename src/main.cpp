@@ -75,11 +75,11 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
         CImageData img = cam->CaptureImage(retrycount); // capture frame
         if (!img.SaveFits(NULL, dirname))               // save frame
         {
-            dbprintlf(FATAL "Could not save FITS");
+            bprintlf(FATAL "[%" PRIu64 "] Could not save FITS", start);
         }
         else
         {
-            dbprintlf(GREEN_FG "Saved: Exposure %.3f s, Bin %d", exposure, bin);
+            bprintlf(GREEN_FG "[%" PRIu64 "] Saved: Exposure %.3f s, Bin %d", start, exposure, bin);
         }
         sync();
         // run auto exposure

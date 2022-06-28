@@ -535,7 +535,9 @@ bool CImageData::FindOptimumExposure(float &targetExposure, int &bin, float perc
         changeBin = false;
     }
     bin = m_binX;
+#ifdef CIMAGE_OPTIMUM_EXP_DEBUG
     dbprintlf("Input: %lf s, bin %d x %d", exposure, m_binX, m_binY);
+#endif
     double val;
     int m_imageSize = m_imageHeight * m_imageWidth;
     uint16_t *picdata = new uint16_t[m_imageSize];
@@ -568,7 +570,9 @@ bool CImageData::FindOptimumExposure(float &targetExposure, int &bin, float perc
     int bin_ = bin;
 
     /** If calculated median pixel is within pixelTarget +/- pixelTargetUncertainty, return current exposure **/
+#ifdef CIMAGE_OPTIMUM_EXP_DEBUG
     dbprintlf("Uncertainty: %f, Reference: %d", fabs(pixelTarget - val), pixelTargetUncertainty);
+#endif
     if (fabs(pixelTarget - val) < pixelTargetUncertainty)
     {
         goto ret;
@@ -576,17 +580,22 @@ bool CImageData::FindOptimumExposure(float &targetExposure, int &bin, float perc
 
     targetExposure = ((double)pixelTarget) * exposure / ((double)val); // target optimum exposure
     targetExposure_ = targetExposure;
+#ifdef CIMAGE_OPTIMUM_EXP_DEBUG
     dbprintlf("Required exposure: %f", targetExposure);
-
+#endif
     if (changeBin)
     {
         // consider lowering binning here
         if (targetExposure_ < maxAllowedExposure)
         {
+#ifdef CIMAGE_OPTIMUM_EXP_DEBUG
             dbprintlf("Considering lowering bin:");
+#endif
             while (targetExposure_ < maxAllowedExposure && bin_ > 2)
             {
+#ifdef CIMAGE_OPTIMUM_EXP_DEBUG
                 dbprintlf("Target %f < Allowed %f, bin %d > 2", targetExposure_, maxAllowedExposure, bin_);
+#endif
                 targetExposure_ *= 4;
                 bin_ /= 2;
             }
@@ -614,7 +623,9 @@ ret:
         bin = 1;
     if (bin > maxAllowedBin)
         bin = maxAllowedBin;
+#ifdef CIMAGE_OPTIMUM_EXP_DEBUG
     dbprintlf(YELLOW_FG "Final exposure and bin: %f s, %d", targetExposure, bin);
+#endif
     delete[] picdata;
     return true;
 }
