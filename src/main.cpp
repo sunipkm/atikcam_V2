@@ -46,7 +46,7 @@ static char dirname[256] = {
     0,
 };
 
-void frame_grabber(CCameraUnit *cam, int cadence = 10) // cadence in seconds
+void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in seconds
 {
     static float maxExposure = 120;
     static float pixelPercentile = 90;
@@ -89,14 +89,14 @@ void frame_grabber(CCameraUnit *cam, int cadence = 10) // cadence in seconds
         start -= get_msec();
         if (start < cadence * 1000)
         {
-            usleep((cadence * 1000 - start) * 1000);
+            usleep(((uint64_t)(cadence * 1000) - start) * 1000);
         }
     }
 }
 
 int main(int argc, char *argv[])
 {
-    float cadence = 10;
+    uint64_t cadence = 10;
 
     gpioSetMode(11, GPIO_OUT);
     gpioWrite(11, GPIO_HIGH);
