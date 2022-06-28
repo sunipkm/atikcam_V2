@@ -87,6 +87,7 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
         cam->SetBinningAndROI(bin, bin, imgXMin, imgXMax, imgYMin, imgYMax); // set binning and ROI
         cam->SetExposure(exposure);
         start -= get_msec();
+        dbprintlf(CYAN_FG "Imaging time: %" PRIu64 " ms", start);
         if (start < cadence * 1000)
         {
             usleep(((uint64_t)(cadence * 1000) - start) * 1000);
