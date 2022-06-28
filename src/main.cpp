@@ -41,8 +41,6 @@ void sighandler(int sig)
     done = 1;
 }
 
-static void housekeeping_fcn(CCameraUnit *cam);
-
 static int bootCount = 0;
 static char dirname[256] = {0, };
 
@@ -231,7 +229,7 @@ static int GetBootCount()
     {
         // 2. File exists
         sz = lseek(fd, 0, SEEK_END);
-        if (sz < sizeof(int))
+        if (sz < (int)(sizeof(int)))
         {
             dbprintlf("Size of position file %u, invalid.", (unsigned int)sz);
             goto rewrite;
