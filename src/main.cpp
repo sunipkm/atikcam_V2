@@ -267,7 +267,11 @@ void _Catchable checknmakedir(const char *path)
     {
         char buf[512];
         snprintf(buf, sizeof(buf), "mkdir -p %s", path);
-        system(buf);
+        if (!system(buf))
+        {
+            dbprintlf(FATAL "could not create directory %s", path);
+            throw std::runtime_error("Could not create savedir");
+        }
     }
     else
     {

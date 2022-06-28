@@ -28,9 +28,21 @@ static inline void sync()
 #include <algorithm>
 #include <chrono>
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
 #ifndef CIMAGE_PREFIX
-#define CIMAGE_PREFIX "atik"
+#warning "Define CIMAGE_PREFIX"
+#define CIMAGE_PREFIX ccameraunit
 #endif
+
+#define CIMAGE_PREFIX_STRING TOSTRING(CIMAGE_PREFIX)
+
+#ifndef CIMAGE_PROGNAME
+#warning "Define CIMAGE_PROGNAME"
+#define CIMAGE_PROGNAME cameraunit_generic
+#endif
+#define CIMAGE_PROGNAME_STRING TOSTRING(CIMAGE_PROGNAME)
 
 static inline uint64_t getTime()
 {
@@ -622,7 +634,7 @@ bool CImageData::FindOptimumExposure(float &targetExposure, float percentilePixe
 
 bool CImageData::SaveFits(char *filePrefix, char *DirPrefix, bool filePrefixIsName, int i, int n, char *outString, ssize_t outStringSz, bool syncOnWrite)
 {
-    static char defaultFilePrefix[] = CIMAGE_PREFIX;
+    static char defaultFilePrefix[] = CIMAGE_PREFIX_STRING;
     static char defaultDirPrefix[] = "." DIR_DELIM "fits" DIR_DELIM;
     if ((filePrefix == NULL) || (strlen(filePrefix) == 0))
         filePrefix = defaultFilePrefix;
@@ -667,7 +679,7 @@ bool CImageData::SaveFits(char *filePrefix, char *DirPrefix, bool filePrefixIsNa
     if (!fits_create_file(&fptr, fileName_s, &status))
     {
         fits_create_img(fptr, bitpix, naxis, naxes, &status);
-        fits_write_key(fptr, TSTRING, "PROGRAM", (void *)"hitmis_explorer", NULL, &status);
+        fits_write_key(fptr, TSTRING, "PROGRAM", (void *)CIMAGE_PROGNAME_STRING, NULL, &status);
         fits_write_key(fptr, TSTRING, "CAMERA", (void *)(m_cameraName.c_str()), NULL, &status);
         fits_write_key(fptr, TULONGLONG, "TIMESTAMP", &(m_timestamp), NULL, &status);
         fits_write_key(fptr, TUSHORT, "BZERO", &bzero, NULL, &status);
