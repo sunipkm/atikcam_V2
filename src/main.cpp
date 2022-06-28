@@ -81,11 +81,11 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
             CImageData img = cam->CaptureImage(retrycount); // capture frame
             if (!img.SaveFits((char *) "aero", dirname))               // save frame
             {
-                bprintlf(FATAL "[%" PRIu64 "] Could not save FITS", start);
+                bprintlf(FATAL "[%" PRIu64 "] AERO: Could not save FITS", start);
             }
             else
             {
-                bprintlf(GREEN_FG "[%" PRIu64 "] Saved: Exposure %.3f s, Bin %d", start, exposure_1, bin_1);
+                bprintlf(GREEN_FG "[%" PRIu64 "] AERO: Saved Exposure %.3f s, Bin %d", start, exposure_1, bin_1);
             }
             sync();
             // run auto exposure
@@ -100,11 +100,11 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
             CImageData img = cam->CaptureImage(retrycount); // capture frame
             if (!img.SaveFits((char *) "lsat", dirname))               // save frame
             {
-                bprintlf(FATAL "[%" PRIu64 "] Could not save FITS", start);
+                bprintlf(FATAL "[%" PRIu64 "] LSAT: Could not save FITS", start);
             }
             else
             {
-                bprintlf(GREEN_FG "[%" PRIu64 "] Saved: Exposure %.3f s, Bin %d", start, exposure_2, bin_2);
+                bprintlf(GREEN_FG "[%" PRIu64 "] LSAT: Saved Exposure %.3f s, Bin %d", start, exposure_2, bin_2);
             }
             sync();
             // run auto exposure
