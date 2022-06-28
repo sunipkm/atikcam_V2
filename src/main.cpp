@@ -26,13 +26,13 @@ static int GetBootCount();
 void _Catchable checknmakedir(const char *path);
 
 #include <time.h>
-static inline uint64_t get_msec()
+static inline double get_tstamp()
 {
     struct timespec tm;
     clock_gettime(CLOCK_REALTIME, &tm);
     uint64_t msec = tm.tv_sec * 1000LLU;
     msec += (tm.tv_nsec / 1000000LLU);
-    return msec;
+    return msec * 0.001;
 }
 
 volatile sig_atomic_t done = 0;
@@ -46,7 +46,7 @@ static char dirname[256] = {
     0,
 };
 
-void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in seconds
+void frame_grabber(CCameraUnit *cam, double cadence = 10) // cadence in seconds
 {
     static float maxExposure = 120;
     static float pixelPercentile = 90;
@@ -71,33 +71,33 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
 
     while (!done)
     {
-        uint64_t start = get_msec();
+        double start = get_tstamp();
         CImageData img = cam->CaptureImage(retrycount); // capture frame
         if (!img.SaveFits(NULL, dirname))               // save frame
         {
-            bprintlf(FATAL "[%" PRIu64 "] Could not save FITS", start);
+            bprintlf(FATAL "[%.3f] Could not save FITS", start);
         }
         else
         {
-            bprintlf(GREEN_FG "[%" PRIu64 "] Saved: Exposure %.3f s, Bin %d", start, exposure, bin);
+            bprintlf(GREEN_FG "[%.3f] Saved: Exposure %.3f s, Bin %d", start, exposure, bin);
         }
         sync();
         // run auto exposure
         img.FindOptimumExposure(exposure, bin, pixelPercentile, pixelTarget, maxExposure, maxBin, 100, pixelUncertainty);
         cam->SetBinningAndROI(bin, bin, imgXMin, imgXMax, imgYMin, imgYMax); // set binning and ROI
         cam->SetExposure(exposure);
-        start = get_msec() - start;
-        if (start < cadence * 1000)
+        start = get_tstamp() - start;
+        if (start < cadence)
         {
-            uint64_t res = (start - cadence * 1000) * 1000;
-            dbprintlf("Res: %" PRIu64, res);
+            int res = (start - cadence * 1000) * 1000;
+            dbprintlf("Res: %d", res);
             usleep(res % 1000000);
             res -= res % 1000000;
             while ((res > 0) && (!done))
             {
                 usleep(1000000);
                 res -= 1000000;
-                dbprintlf("Res: %" PRIu64, res);
+                dbprintlf("Res: %d", res);
             }
         }
     }
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
     }
     while (!done)
     {
-        uint64_t tnow = get_msec();
+        double tnow = get_tstamp();
         short board_temp = -9999;
         if (board_ts_active)
             board_temp = board_tsensor.readTemp();
