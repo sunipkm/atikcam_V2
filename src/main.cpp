@@ -89,7 +89,14 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
         start = get_msec() - start;
         if (start < cadence * 1000)
         {
-            usleep(((uint64_t)(cadence * 1000) - start) * 1000);
+            int res = (start - cadence * 1000) * 1000;
+            usleep(res % 1000000);
+            res -= res % 1000000;
+            while (res > 0)
+            {
+                usleep(1000000);
+                res -= 1000000;
+            }
         }
     }
 }
