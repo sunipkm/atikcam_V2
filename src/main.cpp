@@ -89,7 +89,7 @@ void frame_grabber(CCameraUnit *cam, double cadence = 10) // cadence in seconds
         start = get_tstamp() - start;
         if (start < cadence)
         {
-            int res = (start - cadence) * 1000000;
+            int res = (cadence - start) * 1000000;
             dbprintlf("Res: %d", res);
             usleep(res % 1000000);
             res -= res % 1000000;
