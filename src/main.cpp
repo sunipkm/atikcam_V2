@@ -87,7 +87,6 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
         cam->SetBinningAndROI(bin, bin, imgXMin, imgXMax, imgYMin, imgYMax); // set binning and ROI
         cam->SetExposure(exposure);
         start = get_msec() - start;
-        dbprintlf(CYAN_FG "Imaging time: %" PRIu64 " ms", start);
         if (start < cadence * 1000)
         {
             usleep(((uint64_t)(cadence * 1000) - start) * 1000);
@@ -97,7 +96,7 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
 
 int main(int argc, char *argv[])
 {
-    uint64_t cadence = 10;
+    uint64_t cadence = 30;
 
     gpioSetMode(11, GPIO_OUT);
     gpioWrite(11, GPIO_HIGH);
