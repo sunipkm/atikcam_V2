@@ -268,7 +268,7 @@ void _Catchable checknmakedir(const char *path)
         char buf[512];
         snprintf(buf, sizeof(buf), "mkdir -p %s", path);
         int retval = system(buf);
-        if (!retval)
+        if (retval)
         {
             dbprintlf(FATAL "could not create directory %s, retval %d", path, retval);
             throw std::runtime_error("Could not create savedir, retval " + std::to_string(retval));
