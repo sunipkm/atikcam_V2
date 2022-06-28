@@ -86,7 +86,7 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
         img.FindOptimumExposure(exposure, bin, pixelPercentile, pixelTarget, maxExposure, maxBin, 100, pixelUncertainty);
         cam->SetBinningAndROI(bin, bin, imgXMin, imgXMax, imgYMin, imgYMax); // set binning and ROI
         cam->SetExposure(exposure);
-        start -= get_msec();
+        start = get_msec() - start;
         dbprintlf(CYAN_FG "Imaging time: %" PRIu64 " ms", start);
         if (start < cadence * 1000)
         {
