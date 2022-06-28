@@ -643,7 +643,7 @@ bool CImageData::FindOptimumExposure(float &targetExposure, float percentilePixe
 #define DIR_DELIM "\\"
 #endif
 
-bool CImageData::SaveFits(char *filePrefix, char *DirPrefix, bool filePrefixIsName, int i, int n, char *outString, ssize_t outStringSz, bool syncOnWrite)
+bool CImageData::SaveFits(char * _Nullable filePrefix, char * _Nullable DirPrefix, bool filePrefixIsName, int i, int n, char *outString, ssize_t outStringSz, bool syncOnWrite)
 {
     static char defaultFilePrefix[] = CIMAGE_PREFIX_STRING;
     static char defaultDirPrefix[] = "." DIR_DELIM "fits" DIR_DELIM;

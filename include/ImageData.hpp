@@ -20,10 +20,19 @@ typedef SSIZE_T ssize_t;
 #endif
 #include <string>
 
+#ifndef _Nullable
+/**
+ * @brief Indicate the pointer can be set to null safely.
+ * 
+ */
+#define _Nullable
+#endif
+
 /**
  * @brief Image Data Statistics Storage Class
  *
  */
+
 class ImageStats
 {
     int min_;
@@ -268,7 +277,7 @@ public:
      * 
      * @return bool true on success, negative on failure
      */
-    bool SaveFits(char *filePrefix, char *DirPrefix, bool filePrefixIsName = false, int i = -1, int n = -1, char *outString = NULL, ssize_t outStringSz = 0, bool syncOnWrite = false);
+    bool SaveFits(char * _Nullable filePrefix, char * _Nullable DirPrefix, bool filePrefixIsName = false, int i = -1, int n = -1, char *outString = NULL, ssize_t outStringSz = 0, bool syncOnWrite = false);
     /**
      * @brief Get the image height
      * 

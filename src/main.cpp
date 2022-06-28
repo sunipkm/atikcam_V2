@@ -49,14 +49,16 @@ static char dirname[256] = {
 void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in seconds
 {
     static float maxExposure = 120;
-    static float pixelPercentile = 90;
+    static float pixelPercentile = 95;
     static int pixelTarget = 40000;
     static int pixelUncertainty = 5000;
-    static int maxBin = 4;
+    static int maxBin = 2;
     static int imgXMin = 100, imgYMin = 335, imgXMax = -1, imgYMax = -1;
 
-    static float exposure = 0.2; // 200 ms
-    static int bin = 1;          // start with bin 1
+    static float exposure_1 = 0.2; // 200 ms
+    static float exposure_2 = 0.2; // 200 ms
+    static int bin_1 = 1;          // start with bin 1
+    static int bin_2 = 1;
 
     long retrycount = 10;
 
@@ -66,26 +68,49 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
         return;
     }
 
-    cam->SetBinningAndROI(bin, bin, imgXMin, imgXMax, imgYMin, imgYMax); // set binning and ROI
-    cam->SetExposure(exposure);                                          // set exposure
+    bool odd_cycle = true;
 
     while (!done)
     {
         uint64_t start = get_msec();
-        CImageData img = cam->CaptureImage(retrycount); // capture frame
-        if (!img.SaveFits(NULL, dirname))               // save frame
+        if (odd_cycle)
         {
-            bprintlf(FATAL "[%" PRIu64 "] Could not save FITS", start);
+            // set binning, ROI, exposure
+            cam->SetBinningAndROI(bin_1, bin_1, imgXMin, imgXMax, imgYMin, imgYMax);
+            cam->SetExposure(exposure_1);
+            CImageData img = cam->CaptureImage(retrycount); // capture frame
+            if (!img.SaveFits((char *) "aero", dirname))               // save frame
+            {
+                bprintlf(FATAL "[%" PRIu64 "] Could not save FITS", start);
+            }
+            else
+            {
+                bprintlf(GREEN_FG "[%" PRIu64 "] Saved: Exposure %.3f s, Bin %d", start, exposure_1, bin_1);
+            }
+            sync();
+            // run auto exposure
+            img.FindOptimumExposure(exposure_1, bin_1, pixelPercentile, pixelTarget, maxExposure, maxBin, 100, pixelUncertainty);
+            odd_cycle = false; // switch cycle
         }
         else
         {
-            bprintlf(GREEN_FG "[%" PRIu64 "] Saved: Exposure %.3f s, Bin %d", start, exposure, bin);
+            // set binning, ROI, exposure
+            cam->SetBinningAndROI(bin_2, bin_2, imgXMin, imgXMax, 0, imgYMin);
+            cam->SetExposure(exposure_2);
+            CImageData img = cam->CaptureImage(retrycount); // capture frame
+            if (!img.SaveFits((char *) "lsat", dirname))               // save frame
+            {
+                bprintlf(FATAL "[%" PRIu64 "] Could not save FITS", start);
+            }
+            else
+            {
+                bprintlf(GREEN_FG "[%" PRIu64 "] Saved: Exposure %.3f s, Bin %d", start, exposure_2, bin_2);
+            }
+            sync();
+            // run auto exposure
+            img.FindOptimumExposure(exposure_2, bin_2, pixelPercentile, pixelTarget, maxExposure, maxBin, 100, pixelUncertainty);
+            odd_cycle = true; // switch cycle
         }
-        sync();
-        // run auto exposure
-        img.FindOptimumExposure(exposure, bin, pixelPercentile, pixelTarget, maxExposure, maxBin, 100, pixelUncertainty);
-        cam->SetBinningAndROI(bin, bin, imgXMin, imgXMax, imgYMin, imgYMax); // set binning and ROI
-        cam->SetExposure(exposure);
         start = get_msec() - start;
         if (start < cadence * 1000)
         {
@@ -103,7 +128,7 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
 
 int main(int argc, char *argv[])
 {
-    uint64_t cadence = 30;
+    uint64_t cadence = 15;
 
     gpioSetMode(11, GPIO_OUT);
     gpioWrite(11, GPIO_HIGH);
