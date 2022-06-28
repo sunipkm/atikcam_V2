@@ -61,4 +61,4 @@ clean:
 	rm -vf *.jpg
 
 cleandata:
-    rm -rvf bootcount.dat data
+	rm -rvf bootcount.dat data
