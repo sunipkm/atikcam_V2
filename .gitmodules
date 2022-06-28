@@ -1,0 +1,3 @@
+[submodule "clkgen"]
+	path = clkgen
+	url = git@github.com:sunipkm/clkgen.git
