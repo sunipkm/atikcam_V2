@@ -90,14 +90,12 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
         if (start < cadence * 1000)
         {
             uint64_t res = (cadence * 1000 - start) * 1000;
-            dbprintlf("Res: %" PRIu64, res);
             usleep(res % 1000000);
             res -= res % 1000000;
             while ((res > 0) && (!done))
             {
                 usleep(1000000);
                 res -= 1000000;
-                dbprintlf("Res: %" PRIu64, res);
             }
         }
     }
@@ -166,6 +164,10 @@ int main(int argc, char *argv[])
     if (fp == NULL)
     {
         dbprintlf(FATAL "Could not open temperature log file");
+    }
+    else
+    {
+        fprintf(fp, "# Time (ms), CCD Temperature (C x 100), Board Temperature (C x 100)\n");
     }
     while (!done)
     {
