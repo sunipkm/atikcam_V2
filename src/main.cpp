@@ -49,7 +49,7 @@ static char dirname[256] = {
 void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in seconds
 {
     static float maxExposure = 120;
-    static float pixelPercentile = 95;
+    static float pixelPercentile = 99.99;
     static int pixelTarget = 40000;
     static int pixelUncertainty = 5000;
     static int maxBin = 2;
@@ -136,6 +136,7 @@ int main(int argc, char *argv[])
     sleep(1);
 
     signal(SIGINT, sighandler);
+    signal(SIGTERM, sighandler);
     CCameraUnit *cam = nullptr;
     long retryCount = 10;
     do
@@ -221,6 +222,7 @@ int main(int argc, char *argv[])
 
     delete cam;
     gpioWrite(11, GPIO_LOW);
+    bprintlf("Exiting.");
     return 0;
 }
 
