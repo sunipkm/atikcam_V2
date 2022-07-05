@@ -48,17 +48,16 @@ static char dirname[256] = {
 
 void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in seconds
 {
+    static float LandsatExposureCutoff = 10; // collect landsat exposures IF aeronomy exposures are shorter than THIS
     static float maxExposure = 120;
-    static float pixelPercentile = 99.99;
+    static float pixelPercentile = 99.7;
     static int pixelTarget = 40000;
     static int pixelUncertainty = 5000;
     static int maxBin = 2;
     static int imgXMin = 100, imgYMin = 335, imgXMax = -1, imgYMax = -1;
 
     static float exposure_1 = 0.2; // 200 ms
-    static float exposure_2 = 0.2; // 200 ms
     static int bin_1 = 1;          // start with bin 1
-    static int bin_2 = 1;
 
     long retrycount = 10;
 
@@ -68,12 +67,10 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
         return;
     }
 
-    bool odd_cycle = true;
-
     while (!done)
     {
         uint64_t start = get_msec();
-        if (odd_cycle)
+        // aeronomy section
         {
             // set binning, ROI, exposure
             cam->SetBinningAndROI(bin_1, bin_1, imgXMin, imgXMax, imgYMin, imgYMax);
@@ -90,26 +87,30 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
             sync();
             // run auto exposure
             img.FindOptimumExposure(exposure_1, bin_1, pixelPercentile, pixelTarget, maxExposure, maxBin, 100, pixelUncertainty);
-            odd_cycle = false; // switch cycle
         }
-        else
+        // landsat section
+        if (exposure_1 < LandsatExposureCutoff) // exposure < cutoff, probably daytime + close to ground
         {
             // set binning, ROI, exposure
-            cam->SetBinningAndROI(bin_2, bin_2, imgXMin, imgXMax, 0, imgYMin);
-            cam->SetExposure(exposure_2);
-            CImageData img = cam->CaptureImage(retrycount); // capture frame
-            if (!img.SaveFits((char *) "lsat", dirname))               // save frame
+            cam->SetBinningAndROI(1, 1, imgXMin, imgXMax, 0, imgYMin);
+            float lexposures[] = {0.001, 0.002, 0.005};
+            for (int lidx = 0; lidx < sizeof(lexposures) / sizeof(lexposures[0]); lidx++)
             {
-                bprintlf(FATAL "[%" PRIu64 "] LSAT: Could not save FITS", start);
-            }
-            else
-            {
-                bprintlf(GREEN_FG "[%" PRIu64 "] LSAT: Saved Exposure %.3f s, Bin %d", start, exposure_2, bin_2);
+                cam->SetExposure(lexposures[lidx]);
+                for (int midx = 0; midx < 4; midx++)
+                {
+                    CImageData img = cam->CaptureImage(retrycount); // capture frame
+                    if (!img.SaveFits((char *) "lsat", dirname))               // save frame
+                    {
+                        bprintlf(FATAL "[%" PRIu64 "] LSAT: Could not save FITS", start);
+                    }
+                    else
+                    {
+                        bprintlf(GREEN_FG "[%" PRIu64 "] LSAT: Saved Exposure %.3f s", start, lexposures[lidx]);
+                    }
+                }
             }
             sync();
-            // run auto exposure
-            img.FindOptimumExposure(exposure_2, bin_2, pixelPercentile, pixelTarget, maxExposure, maxBin, 100, pixelUncertainty);
-            odd_cycle = true; // switch cycle
         }
         start = get_msec() - start;
         if (start < cadence * 1000)
@@ -128,7 +129,7 @@ void frame_grabber(CCameraUnit *cam, uint64_t cadence = 10) // cadence in second
 
 int main(int argc, char *argv[])
 {
-    uint64_t cadence = 15;
+    uint64_t cadence = 30;
 
     gpioSetMode(11, GPIO_OUT);
     gpioWrite(11, GPIO_HIGH);
